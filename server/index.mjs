@@ -1,53 +1,26 @@
 import express from "express";
-import https from "https";
+import { startKeyStore, addToKeyStore } from "./utils.mjs";
+import joseRouter from "./router.mjs";
 
 const app = express();
 const port = 4000;
 
-var options = {
-  host: "localhost",
-  path: "/api/load",
-};
+startKeyStore(app);
 
-var req = https.get(options, function (res) {
-  console.log("STATUS: " + res.statusCode);
-  console.log("HEADERS: " + JSON.stringify(res.headers));
-
-  // Buffer the body entirely for processing as a whole.
-  var bodyChunks = [];
-  res
-    .on("data", function (chunk) {
-      // You can process streamed parts here...
-      bodyChunks.push(chunk);
-    })
-    .on("end", function () {
-      var body = Buffer.concat(bodyChunks);
-      console.log("BODY: " + body);
-      // ...and/or process the entire body here.
-    });
-});
-
-req.on("error", function (e) {
-  console.log("ERROR: " + e.message);
-});
-
-var { graphqlHTTP } = require("express-graphql");
-var { buildSchema } = require("graphql");
-
-var schema = buildSchema(`
-  type Query {
-    hello: String
-  }
-`);
-
-var root = { hello: () => "Hello world!" };
-
+app.use(express.json());
 app.use(
-  "/graphql",
-  graphqlHTTP({
-    schema: schema,
-    rootValue: root,
-    graphiql: true,
+  express.urlencoded({
+    extended: true,
   })
 );
-app.listen(port, () => console.log("Now browse to localhost:4000/graphql"));
+
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+
+app.use("/api", joseRouter);
+app.post("/device/", addToKeyStore);
+
+app.listen(port, () => {
+  console.log(`Example app listening at http://localhost:${port}`);
+});

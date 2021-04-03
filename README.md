@@ -3,7 +3,7 @@
 The goal is to build a system that can register new devices into a server via QR code and monitor those devices via web/mobile app. 
 
 
-## How it works
+## How it works ( M2M auth flow )
 
 If anyone reading this has a better solution, feel free to open an issue to discuss it.
 ----
@@ -17,17 +17,33 @@ If anyone reading this has a better solution, feel free to open an issue to disc
 - mobile app reads data from server via graphql
 
 
+<img src="docs/assets/user_auth_flow.png" width="100%" />
+
+
+--------
+
+
+Possible architecture to prevent spam on the open endpoints:
+
+
+<img src="docs/assets/architecture.png" width="100%" />
+
+
+---------
+
 ## Technologies
 (subject to change)
 
 - Device app
-    - possibly electron js (windows/macos/linux?) for an easy setup
+    - electronjs with React
     - systeminformation
     - qrcode
+    - node-jose
 
 - Server
     - docker
     - express.js
+    - node-jose
     - graphql
 
 - Web/mobile app

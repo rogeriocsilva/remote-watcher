@@ -1,0 +1,18 @@
+{
+  "name": "remote-watcher-desktop-app",
+  "productName": "RemoteWatcher",
+  "version": "0.0.1",
+  "description": "",
+  "main": "./main.prod.js",
+  "author": {
+    "name": "Rogério Silva",
+    "email": "hello@rogeirocsilva.com",
+    "url": "https://rogeriocsilva.com"
+  },
+  "scripts": {
+    "electron-rebuild": "node -r ../scripts/BabelRegister.js ../scripts/ElectronRebuild.js",
+    "postinstall": "yarn electron-rebuild"
+  },
+  "license": "MIT",
+  "dependencies": {}
+}
