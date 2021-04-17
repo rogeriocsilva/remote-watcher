@@ -1,0 +1,9 @@
+node_modules/
+.git
+coverage/
+.dockerignore
+Dockerfile
+.gitignore
+.cert/
+yarn-error.log
+docker-compose.yml

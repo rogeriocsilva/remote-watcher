@@ -28,7 +28,7 @@ export const addToKeyStore = async (req, res) => {
     } catch (error) {
       console.log({ error });
       res.status(400);
-      res.send(error);
+      res.send(JSON.stringify(error));
       return;
     }
   } else {

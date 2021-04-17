@@ -11,16 +11,16 @@ const routerMiddleware = async (req, res, next) => {
   if (req?.method === "POST") {
     if (req?.body?.token) {
       try {
-      const { keystore } = req.app.locals.store;
+        const { keystore } = req.app.locals.store;
 
         const v = await JWS.createVerify(keystore).verify(req?.body?.token);
 
         if (v) {
-          const newKey = keystore.get(v.header.kid);
+          const newKey = keystore.get(v?.header?.kid);
           const publicKey = jwkToPem(newKey.toJSON());
           const decoded = jwt.verify(req?.body?.token, publicKey);
 
-          req.decoded = decoded;
+          req.body = { ...decoded, kid: v?.header?.kid };
           next();
         } else {
           res.status(401);
@@ -43,8 +43,7 @@ const routerMiddleware = async (req, res, next) => {
 joseRouter.use(routerMiddleware);
 
 joseRouter.post("/report/", (req, res) => {
-  res.send(req.decoded);
+  res.send(req?.body);
 });
-
 
 export default joseRouter;

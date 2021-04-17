@@ -1,0 +1,32 @@
+version: "3.7"
+services:
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - server-db:/var/lib/postgresql/data
+
+  server:
+    build:
+      context: .
+    environment:
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: postgres
+      DB_NAME: remote_watcher
+      JWT_SECRET: somereallylongsecretkey
+      NODE_ENV: development
+    depends_on:
+      - postgres
+    volumes:
+      - ./:/opt/app/
+    ports:
+      - "4000:4000"
+    command: yarn start
+
+volumes:
+  server-db:
