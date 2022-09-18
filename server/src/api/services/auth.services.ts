@@ -1,11 +1,19 @@
 import { User } from "@prisma/client";
-import { JwtPayload } from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 
 import { db } from "../../utils/db";
+import generateCode from "../../utils/generateCode";
 import hashToken from "../../utils/hashToken";
 
 import { generateTokens } from "../../utils/jwt";
+
+const DEFAULT_DEVICE_CODE_TIMEOUT = 1800;
+
+type FindTokenParams = {
+  deviceCode: string;
+  clientId: string;
+  userCode: string;
+};
 
 type AddRefreshParams = {
   jti: string;
@@ -67,10 +75,43 @@ function revokeTokens(userId: string) {
   });
 }
 
+function generateDeviceToken(clientId: string) {
+  return db.deviceToken.create({
+    data: {
+      userCode: generateCode().toUpperCase(),
+      clientId,
+      expiresIn: DEFAULT_DEVICE_CODE_TIMEOUT,
+    },
+  });
+}
+
+function getDeviceTokenById({
+  deviceCode,
+  clientId,
+  userCode,
+}: FindTokenParams) {
+  const token = db.deviceToken.findFirstOrThrow({
+    where: {
+      AND: [{ deviceCode }, { clientId }, { userCode }, { expired: false }],
+    },
+  });
+
+  return db.deviceToken.updateMany({
+    where: {
+      deviceCode,
+    },
+    data: {
+      used: true,
+    },
+  });
+}
+
 export {
   addRefreshTokenToWhitelist,
   findRefreshTokenById,
   deleteRefreshToken,
   revokeTokens,
   generateAuthTokens,
+  generateDeviceToken,
+  getDeviceTokenById,
 };

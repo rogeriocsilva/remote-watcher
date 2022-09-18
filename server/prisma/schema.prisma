@@ -25,3 +25,13 @@ model RefreshToken {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model DeviceToken {
+  deviceCode  String   @unique @default(uuid())
+  userCode    String
+  clientId    String
+  createdAt   DateTime @default(now())
+  expiresIn   Int 
+  expired     Boolean  @default(false)
+  used        Boolean  @default(false)
+}

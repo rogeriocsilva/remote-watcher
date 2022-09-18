@@ -14,7 +14,11 @@ import {
   findRefreshTokenById,
   deleteRefreshToken,
   revokeTokens,
+  generateDeviceToken,
+  getDeviceTokenById,
 } from "../services/auth.services";
+
+import { isAuthenticated } from "../../middlewares";
 
 import hashToken from "../../utils/hashToken";
 import { generateTokens } from "../../utils/jwt";
@@ -88,7 +92,7 @@ router.post("/login", async (req, res, next) => {
   }
 });
 
-router.post("/refreshToken", async (req, res, next) => {
+router.post("/refresh", async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
     if (!refreshToken) {
@@ -118,7 +122,7 @@ router.post("/refreshToken", async (req, res, next) => {
 
     await deleteRefreshToken(savedRefreshToken.id);
     const jti = uuidv4();
-    const { accessToken, refreshToken: newRefreshToken } = generateTokens(
+    const { accessToken, refreshToken: newRefreshToken } = await generateTokens(
       user,
       jti
     );
@@ -132,6 +136,55 @@ router.post("/refreshToken", async (req, res, next) => {
       accessToken,
       refreshToken: newRefreshToken,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/device", async (req, res, next) => {
+  try {
+    const { clientId } = req.body;
+    if (!clientId) {
+      res.status(400);
+      throw new Error("Missing clientId.");
+    }
+    const deviceToken = await generateDeviceToken(clientId);
+
+    res.json({
+      ...deviceToken,
+      verificationUri: `${req.protocol}://${req.hostname}${req.baseUrl}/device/authenticate`,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/device/authenticate", isAuthenticated, async (req, res, next) => {
+  try {
+    const { clientId, deviceCode } = req.params;
+    const { userId, userCode } = req.body;
+
+    const user = await findUserById(userId);
+    const deviceToken = await getDeviceTokenById({
+      deviceCode,
+      clientId,
+      userCode,
+    });
+
+    if (deviceToken && user) {
+      const jti = uuidv4();
+      const { accessToken, refreshToken } = generateTokens(user, jti);
+      await addRefreshTokenToWhitelist({
+        jti,
+        refreshToken,
+        userId: user?.id,
+      });
+
+      res.json({
+        accessToken,
+        refreshToken,
+      });
+    }
   } catch (err) {
     next(err);
   }

@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import { isAuthenticated, notFound } from "../../middlewares";
+import { isAuthenticated } from "../../middlewares";
 import { findUserById } from "../services/users.services";
 import pick from "lodash.pick";
 
