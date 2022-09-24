@@ -15,6 +15,7 @@ import {
   deleteRefreshToken,
   revokeTokens,
   generateDeviceToken,
+  activateDeviceToken,
   getDeviceTokenById,
 } from "../services/auth.services";
 
@@ -92,7 +93,7 @@ router.post("/login", async (req, res, next) => {
   }
 });
 
-router.post("/refresh", async (req, res, next) => {
+router.post("/refresh", isAuthenticated, async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
     if (!refreshToken) {
@@ -141,7 +142,7 @@ router.post("/refresh", async (req, res, next) => {
   }
 });
 
-router.post("/device", async (req, res, next) => {
+router.post("/device/token", async (req, res, next) => {
   try {
     const { clientId } = req.body;
     if (!clientId) {
@@ -159,31 +160,67 @@ router.post("/device", async (req, res, next) => {
   }
 });
 
-router.post("/device/authenticate", isAuthenticated, async (req, res, next) => {
+router.get("/oauth/token", async (req, res, next) => {
   try {
-    const { clientId, deviceCode } = req.params;
-    const { userId, userCode } = req.body;
+    const deviceCode = req.query.deviceCode as string;
+    const clientId = req.query.clientId as string;
 
-    const user = await findUserById(userId);
     const deviceToken = await getDeviceTokenById({
       deviceCode,
       clientId,
-      userCode,
     });
 
-    if (deviceToken && user) {
-      const jti = uuidv4();
-      const { accessToken, refreshToken } = generateTokens(user, jti);
-      await addRefreshTokenToWhitelist({
-        jti,
-        refreshToken,
-        userId: user?.id,
-      });
-
+    if (deviceToken.expired) {
+      res.status(400);
       res.json({
-        accessToken,
-        refreshToken,
+        error: "expired_token",
+        message: "Token expired, retry again.",
       });
+      return;
+    }
+
+    if (deviceToken.userId) {
+      const user = await findUserById(deviceToken.userId);
+      if (user) {
+        const jti = uuidv4();
+        const { accessToken, refreshToken } = generateTokens(user, jti);
+        await addRefreshTokenToWhitelist({
+          jti,
+          refreshToken,
+          userId: user?.id,
+        });
+
+        res.json({
+          accessToken,
+          refreshToken,
+        });
+        return;
+      }
+    }
+
+    res.status(400);
+    res.json({
+      error: "authorization_pending",
+      message: "Waiting on user's input",
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/device/authenticate", isAuthenticated, async (req, res, next) => {
+  try {
+    const deviceCode = req.query.deviceCode as string;
+    const clientId = req.query.clientId as string;
+    const { userCode, userId } = req.body;
+    if (deviceCode && clientId && userCode) {
+      await activateDeviceToken({
+        deviceCode,
+        clientId,
+        userCode,
+        userId,
+      });
+      res.status(204).send();
     }
   } catch (err) {
     next(err);

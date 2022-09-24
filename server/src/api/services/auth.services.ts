@@ -12,7 +12,13 @@ const DEFAULT_DEVICE_CODE_TIMEOUT = 1800;
 type FindTokenParams = {
   deviceCode: string;
   clientId: string;
+};
+
+type ActivateTokenParams = {
+  deviceCode: string;
+  clientId: string;
   userCode: string;
+  userId: string;
 };
 
 type AddRefreshParams = {
@@ -85,23 +91,26 @@ function generateDeviceToken(clientId: string) {
   });
 }
 
-function getDeviceTokenById({
+function activateDeviceToken({
   deviceCode,
   clientId,
   userCode,
-}: FindTokenParams) {
-  const token = db.deviceToken.findFirstOrThrow({
+  userId,
+}: ActivateTokenParams) {
+  return db.deviceToken.updateMany({
     where: {
       AND: [{ deviceCode }, { clientId }, { userCode }, { expired: false }],
     },
-  });
-
-  return db.deviceToken.updateMany({
-    where: {
-      deviceCode,
-    },
     data: {
-      used: true,
+      userId: userId,
+    },
+  });
+}
+
+function getDeviceTokenById({ deviceCode, clientId }: FindTokenParams) {
+  return db.deviceToken.findFirstOrThrow({
+    where: {
+      AND: [{ deviceCode }, { clientId }],
     },
   });
 }
@@ -113,5 +122,6 @@ export {
   revokeTokens,
   generateAuthTokens,
   generateDeviceToken,
+  activateDeviceToken,
   getDeviceTokenById,
 };

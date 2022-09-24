@@ -14,6 +14,7 @@ model User {
   refreshTokens RefreshToken[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  DeviceToken   DeviceToken[]
 }
 
 model RefreshToken {
@@ -27,11 +28,12 @@ model RefreshToken {
 }
 
 model DeviceToken {
-  deviceCode  String   @unique @default(uuid())
-  userCode    String
-  clientId    String
-  createdAt   DateTime @default(now())
-  expiresIn   Int 
-  expired     Boolean  @default(false)
-  used        Boolean  @default(false)
+  deviceCode String   @unique @default(uuid())
+  userCode   String
+  clientId   String
+  createdAt  DateTime @default(now())
+  expiresIn  Int
+  expired    Boolean  @default(false)
+  user       User?     @relation(fields: [userId], references: [id]) 
+  userId     String?
 }
