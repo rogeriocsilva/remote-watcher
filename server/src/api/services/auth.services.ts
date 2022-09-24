@@ -115,6 +115,17 @@ function getDeviceTokenById({ deviceCode, clientId }: FindTokenParams) {
   });
 }
 
+function revokeDeviceToken({ deviceCode, clientId }: FindTokenParams) {
+  return db.deviceToken.updateMany({
+    where: {
+      AND: [{ deviceCode }, { clientId }],
+    },
+    data: {
+      expired: true,
+    },
+  });
+}
+
 export {
   addRefreshTokenToWhitelist,
   findRefreshTokenById,
@@ -124,4 +135,5 @@ export {
   generateDeviceToken,
   activateDeviceToken,
   getDeviceTokenById,
+  revokeDeviceToken,
 };

@@ -17,6 +17,7 @@ import {
   generateDeviceToken,
   activateDeviceToken,
   getDeviceTokenById,
+  revokeDeviceToken,
 } from "../services/auth.services";
 
 import { isAuthenticated } from "../../middlewares";
@@ -190,6 +191,11 @@ router.get("/oauth/token", async (req, res, next) => {
           userId: user?.id,
         });
 
+        await revokeDeviceToken({
+          deviceCode,
+          clientId,
+        });
+
         res.json({
           accessToken,
           refreshToken,
@@ -214,6 +220,19 @@ router.post("/device/authenticate", isAuthenticated, async (req, res, next) => {
     const clientId = req.query.clientId as string;
     const { userCode, userId } = req.body;
     if (deviceCode && clientId && userCode) {
+      const deviceToken = await getDeviceTokenById({
+        deviceCode,
+        clientId,
+      });
+      if (deviceToken.expired || deviceToken.userId != null) {
+        res.status(400);
+        res.json({
+          error: "expired_token",
+          message: "Token expired, retry again.",
+        });
+        return;
+      }
+
       await activateDeviceToken({
         deviceCode,
         clientId,
@@ -221,6 +240,12 @@ router.post("/device/authenticate", isAuthenticated, async (req, res, next) => {
         userId,
       });
       res.status(204).send();
+    } else {
+      res.status(400);
+      res.send({
+        error: "bad_request",
+        message: "Missing fields",
+      });
     }
   } catch (err) {
     next(err);
